@@ -62,7 +62,7 @@ nrow(iguana_nat)
 # Thin occurence data 50km (change thin parameter for higher distances)
 iguana_nat$spec <- 'SPEC'
 
-thin(iguana_nat, lat.col = "lat", long.col = "lon", spec.col = 'spec', thin.par = 50, reps = 1, out.dir = './', out.base = 'Iguana_native_thinned50km_inv')
+# thin(iguana_nat, lat.col = "lat", long.col = "lon", spec.col = 'spec', thin.par = 50, reps = 1, out.dir = './', out.base = 'Iguana_native_thinned50km')
 
 iguana_nat_50km <- read.csv("Iguana_native_thinned50km_thin1.csv", h=T)[c("lon","lat")]
 
@@ -75,8 +75,29 @@ points(iguana_nat_50km$lon, iguana_nat_50km$lat, col='blue', pch=19, cex=0.1)
 # maxent (machine learning model for predicting)
 ###
 
+# check for collinearity among variables
+# install.packages("usdm")
+library(usdm)
+
+predictors_all <- getData('worldclim', res=2.5, var='bio')
+predictors_alt <- getData('worldclim', res=2.5, var='alt')
+
+predictors_all <- stack(predictors_all, predictors_alt)
+
+presvals <- raster::extract(predictors_all, iguana_nat_50km)
+vifstep(presvals)
+
 # Select bio layers of interest
-predictors_bio <- subset(predictors, c(1,3,4,6,7,10,11,13,15,20)) 
+predictors <- subset(predictors_all, c(2,3,8,9,13,14,15,18,19,20)) 
+
+# check correlations
+presvals_noncoll <- raster::extract(predictors, iguana_nat_50km)
+
+# install.packages("PerformanceAnalytics")
+library("PerformanceAnalytics")
+chart.Correlation(presvals_noncoll, histogram=TRUE, pch=19)
+
+
 
 # Run maxent model
 xm <- maxent(predictors, iguana_nat_50km)
@@ -154,9 +175,10 @@ colfunc <- colorRampPalette(c('white','red'))
 world <- ne_countries(scale = "medium", returnclass = "sp")
 
 par(mar=c(4,4,2,2), xpd=F)
-plot(px, col=colfunc(100), xlim = c(95,110), ylim = c(0,22), zlim=c(0.25,1))
+plot(px, col=colfunc(100), xlim = c(95,110), ylim = c(0,22), zlim=c(0.21,1))
 plot(world, add=T, border='gray35', col=NA, xlim = c(95,110), ylim = c(0,22), lwd=0.5)
 points(iguana_LL, col='blue', pch=19)
+points(iguana_nat, col='blue', pch=19)
 
 # Click on figure to set scale bar
 scalebar(d=100, xy=click(), below="km")
@@ -170,7 +192,7 @@ colfunc <- colorRampPalette(c('white','red'))
 world <- ne_countries(scale = "medium", returnclass = "sp")
 
 par(mar=c(4,4,2,2), xpd=F)
-plot(px, col=colfunc(100), xlim = c(115,130), ylim = c(5,30), zlim=c(0.25,1))
+plot(px, col=colfunc(100), xlim = c(115,130), ylim = c(5,30), zlim=c(0.21,1))
 plot(world, add=T, border='gray35', col=NA, xlim = c(115,130), ylim = c(5,30), lwd=0.5)
 points(iguana_nat, col='blue', pch=19)
 
@@ -186,9 +208,9 @@ colfunc <- colorRampPalette(c('white','red'))
 world <- ne_countries(scale = "medium", returnclass = "sp")
 
 par(mar=c(4,4,2,2), xpd=F)
-plot(px, col=colfunc(100), xlim = c(-120,-20), ylim = c(-40,40), zlim=c(0.25,1))
+plot(px, col=colfunc(100), xlim = c(-120,-20), ylim = c(-40,40), zlim=c(0.21,1))
 plot(world, add=T, border='gray35', col=NA, xlim = c(-120,-20), ylim = c(-40,40), lwd=0.5)
-points(iguana_nat_50km$lon, iguana_nat_50km$lat, col='blue', pch=19, cex=0.1)
+points(iguana_nat_50km, col='blue', pch=19, cex=0.5)
 
 # Click on figure to set scale bar
 scalebar(d=1000, xy=click(), below="km")
@@ -201,7 +223,7 @@ scalebar(d=1000, xy=click(), below="km")
 # Get predictors
 predictors_bio <- getData('CMIP5', res=2.5, var='bio', year = 50, model = 'AC', rcp = '45')
 predictors <- stack(predictors_bio, predictors_alt)
-predictors <- subset(predictors, c(1,3,4,6,7,10,11,13,15,20))
+predictors <- subset(predictors, c(2,3,8,9,13,14,15,18,19,20))
 
 # Run maxent
 xm <- maxent(predictors, iguana_nat_50km)
@@ -214,9 +236,10 @@ colfunc <- colorRampPalette(c('white','red'))
 world <- ne_countries(scale = "medium", returnclass = "sp")
 
 par(mar=c(4,4,2,2), xpd=F)
-plot(px, col=colfunc(100), xlim = c(95,110), ylim = c(0,22), zlim=c(0.25,1))
+plot(px, col=colfunc(100), xlim = c(95,110), ylim = c(0,22), zlim=c(0.28,1))
 plot(world, add=T, border='gray35', col=NA, xlim = c(95,110), ylim = c(0,22), lwd=0.5)
 points(iguana_LL, col='blue', pch=19)
+points(iguana_nat, col='blue', pch=19)
 
 # Click on figure to set scale bar
 scalebar(d=100, xy=click(), below="km")
